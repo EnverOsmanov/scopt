@@ -213,6 +213,14 @@ class OptionDef[A: Read, C](
       }
     } catch applyArgumentExHandler(shortDescription.capitalize, arg)
 
+  private[scopt] def applyFallback(config: C): Either[CSeq[String], C] = {
+    val x = getFallback
+    Validation.validateValue(_validations)(x) match {
+      case Right(_) => Right(action(x, config))
+      case Left(xs) => Left(xs)
+    }
+  }
+
   // number of tokens to read: 0 for no match, 2 for "--foo 1", 1 for "--foo:1"
   private[scopt] def shortOptTokens(arg: String): Int =
     _shortOpt match {

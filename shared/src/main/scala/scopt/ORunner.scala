@@ -263,6 +263,18 @@ private[scopt] object ORunner {
           xs foreach reportError
       }
     }
+
+    def handleFallback(opt: OptionDef[_, C]): Unit = {
+      opt.applyFallback(_config) match {
+        case Right(c) =>
+          _config = c
+          pushChildren(opt)
+        case Left(xs) =>
+          _error = true
+          xs foreach reportError
+      }
+    }
+
     def handleOccurrence(opt: OptionDef[_, C], pending: ListBuffer[OptionDef[_, C]]): Unit = {
       occurrences += (opt -> 1)
       if (occurrences(opt) >= opt.getMaxOccurs) {
@@ -347,7 +359,7 @@ private[scopt] object ORunner {
       val fallback = opt.getFallback
       if (fallback != null) {
         handleOccurrence(opt, pendingOptions)
-        handleArgument(opt, fallback.toString)
+        handleFallback(opt)
       }
     }
     (pendingOptions filter { opt =>
