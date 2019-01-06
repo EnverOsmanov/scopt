@@ -2,8 +2,12 @@ package scopttest
 
 import minitest._
 import java.net.URI
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import scala.concurrent.duration.Duration
 import SpecUtil._
+import scopt.Read
 
 object ImmutableParserSpec extends SimpleTestSuite with PowerAssertions {
   test("unit parser should parse ()") {
@@ -158,6 +162,10 @@ object ImmutableParserSpec extends SimpleTestSuite with PowerAssertions {
 
   test(".required().withFallback() should use the fallback value") {
     requiredWithFallback(args = Nil, expected = "someFallback")
+  }
+
+  test(".withFallback() should parse the provided date in custom format") {
+    withFallbackDate(args = Nil, expected = new Date(42))
   }
 
   test(".hidden() option should still parse ()") {
@@ -541,6 +549,17 @@ Usage: scopt [options]
         .action((x, c) => c.copy(stringValue = x))
     }.parse(args, Config()) == Some(Config(stringValue = expected)))
 
+  def withFallbackDate(args: Seq[String], expected: Date): Unit = {
+    implicit val dateRead: Read[Date] = Read.reads(new SimpleDateFormat("yyyy/MM/dd").parse)
+
+    assert(new scopt.OptionParser[Config]("scopt") {
+      head("scopt", "4.x")
+      opt[Date]("date")
+        .withFallback(() => new Date(42))
+        .action((x, c) => c.copy(date = x))
+    }.parse(args, Config()) == Some(Config(date = expected)))
+  }
+
   val validParser1 = new scopt.OptionParser[Config]("scopt") {
     head("scopt", "3.x")
     opt[Int]('f', "foo")
@@ -887,6 +906,7 @@ Usage: scopt [options]
       bigDecimalValue: BigDecimal = BigDecimal("0.0"),
       uriValue: URI = new URI("http://localhost"),
       durationValue: Duration = Duration("0s"),
+      date: Date = new Date(),
       key: String = "",
       a: String = "",
       b: String = "",
